@@ -1,8 +1,6 @@
-# Phase 3 & 4 — Planning and Neuro-Symbolic Reasoning: Findings
+# Phase 3 & 4 Planning and Neuro-Symbolic Reasoning: Findings
 
----
-
-## Phase 3 — Adaptive Planning Engine
+## Phase 3 Adaptive Planning Engine
 
 ### Design Goals
 
@@ -40,9 +38,7 @@ A probabilistic decision tree is constructed from the plan actions, estimating s
 
 **Observation:** expected_urgency consistently underestimates worst-case urgency by 0.08–0.14 units due to optimistic branching assumptions. This is a known limitation documented in the API response as `confidence_note`.
 
----
-
-## Phase 4 — Neuro-Symbolic Reasoning
+## Phase 4 Neuro-Symbolic Reasoning
 
 ### The Grounding Pipeline
 
@@ -56,7 +52,7 @@ Symbolic fact: severity_level(high, 0.85)
 Symbolic fact: infection_spread(widespread, 0.91)
 ```
 
-This step is what makes the reasoning auditable. A clinician or agronomist can inspect the symbolic facts and verify whether each is consistent with what they observe in the image — without understanding the neural network at all.
+This step is what makes the reasoning auditable. A clinician or agronomist can inspect the symbolic facts and verify whether each is consistent with what they observe in the image without understanding the neural network at all.
 
 ### Knowledge Graph Construction
 
@@ -77,11 +73,11 @@ The disease knowledge graph was constructed with NetworkX, encoding:
 | Temporal trend rules | 3 | `trend(worsening) → escalation_flag(true)` |
 | Composite urgency rules | 3 | `urgency_score = f(confidence, severity, spread)` |
 
-### Key Finding — Rules Fired vs. Urgency Correlation
+### Key Finding Rules Fired vs. Urgency Correlation
 
 Across 150 test analyses, the number of rules fired showed strong positive correlation with urgency_score (r = 0.81). This is expected: more rules fire when more risk factors are simultaneously present. It validates that the rule set is internally consistent.
 
-### Key Finding — Reasoning Tracability
+### Key Finding Reasoning Tracability
 
 Every symbolic fact carries:
 - `predicate` — the proposition being asserted
@@ -97,24 +93,20 @@ This trace structure means every treatment recommendation in the plan can be wal
 2. **Rule confidence propagation is heuristic.** Confidence values are multiplied through rule chains, which is a simplification of proper probabilistic inference.
 3. **Seasonal modifier is static.** Currently set at deployment time; a real system would use geolocation + date to infer season automatically.
 
----
-
-## Phase 5 — Deployment Notes
+## Phase 5 Deployment Notes
 
 See `docs/architecture/system_overview.md` for full deployment diagram.
 
 **Key deployment decisions:**
 
-- Singleton orchestrator pattern — all engines initialised once at startup, not per request. Reduces per-request latency from ~8s → ~2.1s.
-- `register_full_backward_hook` throughout XAI — avoids deprecated hook warnings in PyTorch 2.2.
-- numpy pinned to `1.26.4` — prevents ABI incompatibility with torch 2.2+cpu wheel.
-- torch CPU-only wheel explicitly installed before all other packages — prevents pip from resolving CUDA wheel (~2.4GB).
-
----
+- Singleton orchestrator pattern all engines initialised once at startup, not per request. Reduces per-request latency from ~8s → ~2.1s.
+- `register_full_backward_hook` throughout XAI avoids deprecated hook warnings in PyTorch 2.2.
+- numpy pinned to `1.26.4` prevents ABI incompatibility with torch 2.2+cpu wheel.
+- torch CPU-only wheel explicitly installed before all other packages prevents pip from resolving CUDA wheel (~2.4GB).
 
 ## Future Work
 
-1. **Phase 6 — LLM Grounding Layer.** Use a small LLM (Mistral-7B or GPT-4o API) to convert the symbolic reasoning trace into fluent natural language explanation. The LLM receives verified facts only — no raw image — preventing hallucination.
+1. **Phase 6 — LLM Grounding Layer.** Use a small LLM (Mistral-7B or GPT-4o API) to convert the symbolic reasoning trace into fluent natural language explanation. The LLM receives verified facts only no raw image preventing hallucination.
 
 2. **Reasoning Alignment Evaluation.** Compare symbolic explanation vs. LLM-generated explanation on three metrics: factual consistency, hallucination rate, completeness. This evaluation could become a paper contribution.
 
