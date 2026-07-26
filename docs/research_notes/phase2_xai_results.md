@@ -2,13 +2,9 @@
 
 **Methods:** Grad-CAM++ (deployed), LIME (notebook), SHAP GradientExplainer (notebook)
 
----
-
 ## Objective
 
 Produce spatial explanations that answer: *which regions of the leaf drove the classification decision?* The explanations must be (a) visually meaningful to a plant pathologist, (b) computationally feasible for real-time inference on CPU, and (c) machine-readable for extraction of spatial statistics that feed the reasoning engine.
-
----
 
 ## Methods Implemented and Compared
 
@@ -40,8 +36,6 @@ Shapley value attribution using expected gradients. Pixel-level contribution sco
 
 **Key engineering note:** `shap.GradientExplainer` was used instead of `DeepExplainer` due to a known BatchNorm tensor size mismatch in DeepLIFT's handler for EfficientNet's BatchNorm layers. GradCAM hooks must be fully removed before initialising GradientExplainer to prevent hook state corruption.
 
----
-
 ## Comparative Findings
 
 | Property | Grad-CAM++ | LIME | SHAP |
@@ -55,17 +49,17 @@ Shapley value attribution using expected gradients. Pixel-level contribution sco
 
 ### Observation 1 — SHAP is more localised; Grad-CAM++ is more global
 
-SHAP pixel-level attribution concentrated on the precise boundaries of disease lesions — the dark brown ring edges of Late Blight, the yellow halo of Bacterial Spot. Grad-CAM++ produced broader activation regions covering the entire infected area.
+SHAP pixel-level attribution concentrated on the precise boundaries of disease lesions the dark brown ring edges of Late Blight, the yellow halo of Bacterial Spot. Grad-CAM++ produced broader activation regions covering the entire infected area.
 
 **Implication:** For human explanation, Grad-CAM++ overlays are more immediately interpretable. For precision spatial analysis (measuring lesion area), SHAP would be preferred.
 
 ### Observation 2 — LIME is sensitive to superpixel segmentation size
 
-Segment size 50 vs 100 superpixels produced materially different importance rankings for the same image. This sensitivity limits LIME's reliability for automated spatial statistics extraction — a human must visually inspect the output.
+Segment size 50 vs 100 superpixels produced materially different importance rankings for the same image. This sensitivity limits LIME's reliability for automated spatial statistics extraction a human must visually inspect the output.
 
 ### Observation 3 — Grad-CAM++ focus_score correlates with model confidence
 
-Across 200 test images, Pearson correlation between focus_score and prediction confidence: **r = 0.74** (p < 0.001). This confirms that higher-confidence predictions correspond to sharper, more localised spatial attention — the model "knows where to look" more precisely when it is confident.
+Across 200 test images, Pearson correlation between focus_score and prediction confidence: **r = 0.74** (p < 0.001). This confirms that higher-confidence predictions correspond to sharper, more localised spatial attention the model "knows where to look" more precisely when it is confident.
 
 **This correlation is used in the reasoning engine:** a high focus_score strengthens the `confidence_level(high)` symbolic fact.
 
@@ -73,16 +67,12 @@ Across 200 test images, Pearson correlation between focus_score and prediction c
 
 Early-stage infections (small lesions, low spread) produce low entropy heatmaps (concentrated activation). Late-stage infections (widespread lesions) produce high entropy heatmaps. This directly maps to the `infection_spread` symbolic fact.
 
----
-
 ## Implementation Notes
 
 - `register_full_backward_hook` used throughout (deprecated `register_backward_hook` removed in PyTorch 2.x)
 - GradCAM hooks always removed in `finally` blocks to prevent state leakage between concurrent API requests
 - Heatmap resized to original image dimensions with bilinear interpolation before overlay blending
-- Overlay alpha: 0.5 (heatmap) + 0.5 (original) — tuned for visual clarity
-
----
+- Overlay alpha: 0.5 (heatmap) + 0.5 (original) tuned for visual clarity
 
 ## Key Conclusion
 
