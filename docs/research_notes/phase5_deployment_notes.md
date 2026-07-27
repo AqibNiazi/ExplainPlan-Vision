@@ -1,12 +1,8 @@
-# Phase 5 — Full-Stack Deployment: Notes & Decisions
-
----
+# Phase 5 Full-Stack Deployment: Notes & Decisions
 
 ## Objective
 
 Expose the complete 10-stage pipeline as a production web application accessible from any browser, with no local setup required. The deployment must be free-tier compatible and handle CPU-only inference gracefully.
-
----
 
 ## Backend — FastAPI Design Decisions
 
@@ -36,15 +32,13 @@ async def lifespan(app: FastAPI):
 | Type annotation validation | Built-in | Manual |
 | Response schema generation | Automatic | Manual |
 
-FastAPI's automatic Swagger UI at `/docs` was particularly valuable — professors and reviewers can inspect every endpoint, schema, and response model without reading source code.
+FastAPI's automatic Swagger UI at `/docs` was particularly valuable professors and reviewers can inspect every endpoint, schema, and response model without reading source code.
 
 ### Pydantic v2 Response Models
 
 Every response is validated by a Pydantic v2 model before being returned. This enforces schema consistency and makes the API contract machine-readable.
 
 Key models: `PredictionResult`, `XAIResult`, `ReasoningResult`, `PlanResult`, `FullAnalysisResponse`.
-
----
 
 ## Deployment — HuggingFace Spaces (Docker)
 
@@ -82,15 +76,13 @@ RUN pip install -r requirements.txt
 
 ### Model Weight Distribution
 
-Model weights (`best_model.pth`, ~22MB) and class mappings (`class_mappings.json`, ~1KB) are committed directly to the Space repository under `assets/`. The `startup.py` script checks for their presence and downloads from HuggingFace Model Hub if missing — this provides a fallback for cases where the files are not in the repo.
+Model weights (`best_model.pth`, ~22MB) and class mappings (`class_mappings.json`, ~1KB) are committed directly to the Space repository under `assets/`. The `startup.py` script checks for their presence and downloads from HuggingFace Model Hub if missing this provides a fallback for cases where the files are not in the repo.
 
 ### Cold Start Latency
 
 HuggingFace Spaces free tier sleeps after 48 hours of inactivity. Cold start (Space wake-up + model loading) takes approximately **45–60 seconds**. Subsequent requests run at ~2.1s.
 
 **Mitigation:** The health endpoint (`/api/v1/health`) returns quickly even during model loading, so the frontend can poll it and show a loading state rather than a blank error.
-
----
 
 ## Frontend — React 19 + Tailwind CSS 4
 
@@ -130,8 +122,6 @@ Seven dedicated analysis components, one per result domain:
 
 All upload state, progress tracking, error handling, and toast notifications are managed in a single `useAnalysis` hook. Pages contain zero business logic — they only render.
 
----
-
 ## Deployment — Vercel (Frontend)
 
 Build command: `npm run build`  
@@ -151,8 +141,6 @@ cors_origins: List[str] = [
 ]
 ```
 
----
-
 ## Performance Summary
 
 | Metric | Value |
@@ -166,11 +154,9 @@ cors_origins: List[str] = [
 | Model size on disk | ~22MB |
 | Container RAM at rest | ~1.2GB |
 
----
-
 ## Lessons Learned
 
-1. **Dependency installation order matters more than versions alone.** The numpy/torch ABI conflict was not solved by pinning versions — it required changing the installation order.
+1. **Dependency installation order matters more than versions alone.** The numpy/torch ABI conflict was not solved by pinning versions it required changing the installation order.
 
 2. **HuggingFace Spaces Docker has undocumented constraints.** The port 7860 requirement, non-root user requirement (`useradd -m -u 1000 user`), and `/home/user` working directory are not prominently documented but are required for deployment to succeed.
 
